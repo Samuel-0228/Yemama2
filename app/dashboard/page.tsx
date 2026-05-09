@@ -143,6 +143,7 @@ export default function DashboardPage() {
 
   const periodDayCount = useMemo(() => cycles.filter((item) => item.is_period).length, [cycles])
   const latestPeriod = useMemo(() => cycles.find((item) => item.is_period), [cycles])
+  const cycleDay = latestPeriod?.date ? Math.max(1, differenceInCalendarDays(new Date(), new Date(latestPeriod.date)) + 1) : 1
   const nextPeriodDate = useMemo(() => {
     if (!latestPeriod?.date) return null
     return addDays(new Date(latestPeriod.date), 28)
@@ -253,7 +254,7 @@ export default function DashboardPage() {
             <>
               <Card className="border-0 bg-gradient-to-br from-pink-50 to-purple-50 p-5">
                 <p className="text-xs text-muted-foreground">Current Cycle Day</p>
-                <p className="mt-1 text-2xl font-bold">Day {Math.max(1, periodDayCount % 28)}</p>
+                <p className="mt-1 text-2xl font-bold">Day {cycleDay}</p>
               </Card>
               <Card className="border-0 bg-gradient-to-br from-blue-50 to-purple-50 p-5">
                 <p className="text-xs text-muted-foreground">Next Period</p>

@@ -51,9 +51,14 @@ export async function POST(request: NextRequest) {
     }
 
     const answer = json.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
+    const disclaimerText = 'This is informational only and not a medical diagnosis.'
+    const baseAnswer = answer ?? 'I could not generate an answer. Please ask again.'
+    const safeAnswer = baseAnswer.includes(disclaimerText) ? baseAnswer : `${baseAnswer}
+
+${disclaimerText}`
 
     return NextResponse.json({
-      answer: answer ?? 'I could not generate an answer. Please ask again.',
+      answer: safeAnswer,
     })
   } catch {
     return NextResponse.json({ error: 'Something went wrong while processing your request.' }, { status: 500 })
