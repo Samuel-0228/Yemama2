@@ -44,8 +44,8 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-purple-50">
-      <div className="grid min-h-screen lg:grid-cols-2">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-purple-50 p-4 sm:p-8">
+      <div className="mx-auto grid w-full max-w-6xl overflow-hidden rounded-3xl border border-white/60 bg-white/70 shadow-2xl backdrop-blur-md lg:min-h-[78vh] lg:grid-cols-2">
         <aside className="relative hidden overflow-hidden lg:block">
           <img
             src="https://th.bing.com/th/id/R.88ccab5716292a9627fdff4c2f7dd6ba?rik=lCl0wNwxNbyVVw&pid=ImgRaw&r=0"
@@ -64,7 +64,7 @@ export default function LoginPage() {
           </div>
         </aside>
 
-        <section className="flex items-center justify-center p-4 sm:p-8">
+        <section className="flex items-center justify-center p-6 sm:p-10">
           <div className="w-full max-w-md">
             <div className="mb-8 text-center">
               <div className="mb-4 flex justify-end">
