@@ -44,43 +44,65 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-purple-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="flex justify-end mb-4">
-            <LanguageSwitcher />
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-purple-50">
+      <div className="grid min-h-screen lg:grid-cols-2">
+        <aside className="relative hidden overflow-hidden lg:block">
+          <img
+            src="https://images.unsplash.com/photo-1609220136736-443140cffec6?auto=format&fit=crop&w=1400&q=80"
+            alt="Mother smiling in a calm setting"
+            className="h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-900/40 via-pink-700/30 to-purple-800/50" />
+          <div className="absolute bottom-10 left-10 max-w-md text-white">
+            <p className="text-sm uppercase tracking-[0.2em] text-white/80">Yemama Care</p>
+            <h2 className="mt-2 text-3xl font-semibold leading-tight">
+              Support for every step of your health journey
+            </h2>
+            <p className="mt-3 text-sm text-white/90">
+              Track symptoms, book appointments, and get personalized insights with confidence.
+            </p>
           </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-2">
-            {t.app_name}
-          </h1>
-          <p className="text-muted-foreground text-lg">{a.login_title}</p>
-        </div>
+        </aside>
 
-        <Card className="p-6 shadow-lg border-0">
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">{a.email}</label>
-              <Input type="email" placeholder={a.email_placeholder} value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full h-12" />
+        <section className="flex items-center justify-center p-4 sm:p-8">
+          <div className="w-full max-w-md">
+            <div className="mb-8 text-center">
+              <div className="mb-4 flex justify-end">
+                <LanguageSwitcher />
+              </div>
+              <h1 className="mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-4xl font-bold text-transparent">
+                {t.app_name}
+              </h1>
+              <p className="text-lg text-muted-foreground">{a.login_title}</p>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">{a.password}</label>
-              <Input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full h-12" />
+
+            <Card className="border-0 p-6 shadow-lg">
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-foreground">{a.email}</label>
+                  <Input type="email" placeholder={a.email_placeholder} value={email} onChange={(e) => setEmail(e.target.value)} required className="h-12 w-full" />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-foreground">{a.password}</label>
+                  <Input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required className="h-12 w-full" />
+                </div>
+                {error && (
+                  <div className="rounded-lg border border-red-300 bg-red-100 p-3 text-sm text-red-800">{error}</div>
+                )}
+                <Button type="submit" className="h-12 w-full rounded-full bg-gradient-to-r from-primary to-accent font-semibold text-white transition-all hover:opacity-90" disabled={loading}>
+                  {loading ? a.signing_in : a.sign_in}
+                </Button>
+              </form>
+              <div className="mt-6 text-center text-sm text-muted-foreground">
+                {a.no_account}{' '}
+                <Link href="/auth/signup" className="font-semibold text-primary hover:underline">{a.sign_up}</Link>
+              </div>
+            </Card>
+            <div className="mt-8 text-center text-sm text-muted-foreground">
+              <p>{a.tagline}</p>
             </div>
-            {error && (
-              <div className="p-3 bg-red-100 border border-red-300 rounded-lg text-red-800 text-sm">{error}</div>
-            )}
-            <Button type="submit" className="w-full h-12 bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white font-semibold rounded-full transition-all" disabled={loading}>
-              {loading ? a.signing_in : a.sign_in}
-            </Button>
-          </form>
-          <div className="mt-6 text-center text-sm text-muted-foreground">
-            {a.no_account}{' '}
-            <Link href="/auth/signup" className="text-primary font-semibold hover:underline">{a.sign_up}</Link>
           </div>
-        </Card>
-        <div className="mt-8 text-center text-sm text-muted-foreground">
-          <p>{a.tagline}</p>
-        </div>
+        </section>
       </div>
     </div>
   )
