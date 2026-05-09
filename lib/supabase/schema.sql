@@ -117,7 +117,7 @@ CREATE INDEX idx_symptoms_user_date ON symptoms(user_id, date DESC);
 
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  preferred_mode TEXT NOT NULL DEFAULT 'cycle' CHECK (preferred_mode IN ('cycle', 'pregnancy')),
+  tracking_type TEXT NOT NULL DEFAULT 'period' CHECK (tracking_type IN ('period', 'pregnancy')),
   pin_enabled BOOLEAN DEFAULT false,
   biometric_enabled BOOLEAN DEFAULT false,
   created_at TIMESTAMP DEFAULT now(),

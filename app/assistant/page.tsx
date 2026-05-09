@@ -26,7 +26,7 @@ export default function AssistantPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: 'assistant',
-      text: 'Hi, I am your AI health assistant. I can support period, pregnancy, and symptom questions. I am not a doctor and cannot diagnose conditions.',
+      text: 'Hi, I am your AI health assistant. I can answer questions about periods, pregnancy, and symptoms. I am not a doctor and cannot diagnose conditions.',
     },
   ])
   const [loading, setLoading] = useState(false)

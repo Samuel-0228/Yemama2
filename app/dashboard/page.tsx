@@ -50,6 +50,19 @@ const fruitByWeek: Record<number, string> = {
   40: 'Watermelon',
 }
 
+function mapLegacyPhaseToFlags(phase: string) {
+  switch (phase) {
+    case 'period':
+      return { is_period: true, is_fertile: false, is_ovulation: false }
+    case 'fertile':
+      return { is_period: false, is_fertile: true, is_ovulation: false }
+    case 'ovulation':
+      return { is_period: false, is_fertile: false, is_ovulation: true }
+    default:
+      return { is_period: false, is_fertile: false, is_ovulation: false }
+  }
+}
+
 export default function DashboardPage() {
   const supabase = createClient()
   const { mode, loading: modeLoading, userId } = useMode()
@@ -64,6 +77,7 @@ export default function DashboardPage() {
   const [mood, setMood] = useState('calm')
   const [symptomName, setSymptomName] = useState('')
   const [symptomNotes, setSymptomNotes] = useState('')
+  const [symptomIntensity, setSymptomIntensity] = useState('3')
 
   useEffect(() => {
     const loadData = async () => {
@@ -96,9 +110,7 @@ export default function DashboardPage() {
           cycleRows = (fallback.data ?? []).map((row: LegacyCycleLog) => ({
             id: row.id,
             date: row.date,
-            is_period: row.phase === 'period',
-            is_fertile: row.phase === 'fertile',
-            is_ovulation: row.phase === 'ovulation',
+            ...mapLegacyPhaseToFlags(row.phase),
           }))
         }
 
@@ -163,7 +175,7 @@ export default function DashboardPage() {
         user_id: userId,
         date: today,
         symptom_name: symptomName.trim(),
-        intensity: 3,
+        intensity: Math.max(1, Math.min(5, Number(symptomIntensity) || 3)),
         notes: [cycleDetails, symptomNotes.trim()].filter(Boolean).join(' | ') || null,
       })
 
@@ -279,6 +291,7 @@ export default function DashboardPage() {
             <Input value={symptomName} onChange={(event) => setSymptomName(event.target.value)} placeholder={mode === 'cycle' ? 'e.g. cramps' : 'e.g. nausea'} required />
             <Input value={flow} onChange={(event) => setFlow(event.target.value)} placeholder={mode === 'cycle' ? 'flow: light/medium/heavy' : 'energy: low/medium/high'} />
             <Input value={mood} onChange={(event) => setMood(event.target.value)} placeholder="mood" />
+            <Input value={symptomIntensity} onChange={(event) => setSymptomIntensity(event.target.value)} placeholder="intensity (1-5)" />
             <Textarea value={symptomNotes} onChange={(event) => setSymptomNotes(event.target.value)} placeholder="Notes" className="md:col-span-2" />
             <Button type="submit" disabled={saving} className="md:col-span-2">
               {saving ? 'Saving...' : mode === 'cycle' ? 'Save Symptom & Flow' : 'Save Pregnancy Check-In'}

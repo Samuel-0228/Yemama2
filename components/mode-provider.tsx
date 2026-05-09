@@ -43,9 +43,11 @@ export function ModeProvider({ children }: { children: React.ReactNode }) {
 
     const hydrate = async () => {
       try {
-        const localMode = window.localStorage.getItem(MODE_STORAGE_KEY)
-        if (isMode(localMode)) {
-          setModeState(localMode)
+        if (typeof window !== 'undefined') {
+          const localMode = window.localStorage.getItem(MODE_STORAGE_KEY)
+          if (isMode(localMode)) {
+            setModeState(localMode)
+          }
         }
 
         const { data: { user } } = await supabase.auth.getUser()
@@ -70,7 +72,27 @@ export function ModeProvider({ children }: { children: React.ReactNode }) {
         if (profile?.tracking_type) {
           const nextMode = fromTrackingType(profile.tracking_type)
           setModeState(nextMode)
-          window.localStorage.setItem(MODE_STORAGE_KEY, nextMode)
+          if (typeof window !== 'undefined') {
+            if (typeof window !== 'undefined') {
+      window.localStorage.setItem(MODE_STORAGE_KEY, nextMode)
+    }
+          }
+        } else {
+          const { data: userPreference } = await supabase
+            .from('users')
+            .select('tracking_type')
+            .eq('id', user.id)
+            .maybeSingle<{ tracking_type: string | null }>()
+
+          if (userPreference?.tracking_type) {
+            const nextMode = fromTrackingType(userPreference.tracking_type)
+            setModeState(nextMode)
+            if (typeof window !== 'undefined') {
+              if (typeof window !== 'undefined') {
+      window.localStorage.setItem(MODE_STORAGE_KEY, nextMode)
+    }
+            }
+          }
         }
       } finally {
         if (mounted) {
@@ -88,20 +110,33 @@ export function ModeProvider({ children }: { children: React.ReactNode }) {
 
   const setMode = useCallback(async (nextMode: Mode) => {
     setModeState(nextMode)
-    window.localStorage.setItem(MODE_STORAGE_KEY, nextMode)
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(MODE_STORAGE_KEY, nextMode)
+    }
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       return
     }
 
+    const trackingType = toTrackingType(nextMode)
+
     await supabase
       .from('user_profiles')
       .upsert({
         user_id: user.id,
-        tracking_type: toTrackingType(nextMode),
+        tracking_type: trackingType,
       }, {
         onConflict: 'user_id',
+      })
+
+    await supabase
+      .from('users')
+      .upsert({
+        id: user.id,
+        tracking_type: trackingType,
+      }, {
+        onConflict: 'id',
       })
   }, [supabase])
 

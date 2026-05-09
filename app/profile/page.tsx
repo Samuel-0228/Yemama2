@@ -81,7 +81,7 @@ export default function ProfilePage() {
               <span className="text-sm">Biometric Lock UI</span>
               <Switch checked={biometricEnabled} onCheckedChange={setBiometricEnabled} />
             </div>
-            <p className="text-xs text-muted-foreground">These toggles represent client lock preferences and can be connected to native biometric APIs.</p>
+            <p className="text-xs text-muted-foreground">These toggles represent client lock preferences (UI only; biometric integration not yet implemented).</p>
           </div>
         </Card>
 

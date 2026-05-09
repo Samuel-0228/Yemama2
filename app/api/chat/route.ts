@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
       `Current mode: ${body.mode ?? 'cycle'}.`,
       `Recent context: ${body.contextSummary ?? 'No context provided.'}`,
       `Question: ${body.question}`,
-      'Rules: provide concise, non-diagnostic guidance, include a short safety disclaimer in every answer.',
+      "Rules: provide concise, non-diagnostic guidance, and include this exact disclaimer in every answer: 'This is informational only and not a medical diagnosis.'",
     ].join('\n')
 
     const geminiResponse = await fetch(GEMINI_ENDPOINT, {
