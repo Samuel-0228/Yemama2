@@ -127,7 +127,7 @@ export default function ProfilePage() {
                   </div>
                 </>
               )}
-              <Button variant="outline" className="w-full mt-4" onClick={() => router.push('/tracking/logs')}>
+              <Button variant="outline" className="w-full mt-4" onClick={() => router.push('/auth/onboarding')}>
                 <Settings className="w-4 h-4 mr-2" />
                 {p.edit_settings}
               </Button>

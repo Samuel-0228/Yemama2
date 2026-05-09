@@ -2,46 +2,29 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { ArrowLeft, Plus } from 'lucide-react'
 import { MobileNav } from '@/components/mobile-nav'
 
 const SYMPTOMS = [
+  { name: 'Cramps', emoji: '⚡' },
+  { name: 'Headache', emoji: '🤕' },
   { name: 'Nausea', emoji: '🤢' },
   { name: 'Fatigue', emoji: '😴' },
-  { name: 'Headache', emoji: '🤕' },
-  { name: 'Back Pain', emoji: '🔙' },
-  { name: 'Swelling', emoji: '🦵' },
-  { name: 'Heartburn', emoji: '🔥' },
-  { name: 'Insomnia', emoji: '🌙' },
-  { name: 'Mood Swings', emoji: '🎭' },
-  { name: 'Dizziness', emoji: '💫' },
-  { name: 'Shortness of Breath', emoji: '😮‍💨' },
-  { name: 'Chest Pain', emoji: '💔' },
-  { name: 'Severe Vomiting', emoji: '🤮' },
-  { name: 'Bleeding', emoji: '🩸' },
-  { name: 'Reduced Fetal Movement', emoji: '👶' },
-  { name: 'High Blood Pressure', emoji: '📈' },
-  { name: 'Cramping', emoji: '⚡' },
-  { name: 'Spotting', emoji: '🔴' },
-  { name: 'Breast Tenderness', emoji: '💗' },
-  { name: 'Bloating', emoji: '🎈' },
-  { name: 'Constipation', emoji: '😣' },
+  { name: 'Back pain', emoji: '🔙' },
+  { name: 'Mood swings', emoji: '🎭' },
 ]
 
-const DOCTOR_MAP: Record<string, { type: string; reason: string }[]> = {
-  'Bleeding': [{ type: '🚨 OB-GYN / Emergency', reason: 'Needs immediate evaluation' }],
-  'Reduced Fetal Movement': [{ type: '🚨 OB-GYN', reason: 'Fetal monitoring needed urgently' }],
-  'High Blood Pressure': [{ type: '⚠️ OB-GYN / Cardiologist', reason: 'Preeclampsia screening required' }],
-  'Chest Pain': [{ type: '🚨 Cardiologist / Emergency', reason: 'Cardiac evaluation needed' }],
-  'Severe Vomiting': [{ type: '⚠️ OB-GYN', reason: 'Hyperemesis gravidarum treatment' }],
-  'Shortness of Breath': [{ type: '⚠️ Pulmonologist / OB-GYN', reason: 'Respiratory assessment needed' }],
-  'Swelling': [{ type: '⚠️ OB-GYN', reason: 'Rule out preeclampsia' }],
+type SymptomStatus = 'Good' | 'Moderate' | 'Concerning'
+
+type SymptomAnalysis = {
+  status: SymptomStatus
+  summary: string
+  homeRemedies: string[]
+  restAdvice: string[]
+  seeDoctorWhen: string[]
 }
 
 export default function SymptomsPage() {
@@ -54,9 +37,7 @@ export default function SymptomsPage() {
   const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(false)
   const [recent, setRecent] = useState<any[]>([])
-  const [analysis, setAnalysis] = useState<{ text: string; doctors: { type: string; reason: string }[] } | null>(null)
-
-  useEffect(() => { fetchRecent() }, [])
+  const [analysis, setAnalysis] = useState<SymptomAnalysis | null>(null)
 
   const fetchRecent = async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -66,30 +47,80 @@ export default function SymptomsPage() {
     if (data) setRecent(data)
   }
 
+  useEffect(() => { fetchRecent() }, [])
+
   const toggle = (name: string) => {
     const next = new Set(selected)
-    next.has(name) ? next.delete(name) : next.add(name)
+    if (next.has(name)) next.delete(name)
+    else next.add(name)
     setSelected(next)
   }
 
-  const analyze = (names: string[]) => {
-    const msgs: string[] = []
-    const docs: { type: string; reason: string }[] = []
-    if (names.includes('Bleeding')) msgs.push('Any bleeding needs immediate attention.')
-    if (names.includes('Reduced Fetal Movement')) msgs.push('Decreased fetal movement is serious — contact your provider now.')
-    if (names.includes('High Blood Pressure') || (names.includes('Swelling') && names.includes('Headache')))
-      msgs.push('These may indicate preeclampsia. Seek care promptly.')
-    if (names.includes('Chest Pain') || names.includes('Shortness of Breath'))
-      msgs.push('Chest or breathing symptoms need urgent evaluation.')
-    if (names.includes('Severe Vomiting') || names.includes('Nausea'))
-      msgs.push('Persistent nausea may indicate hyperemesis gravidarum. Stay hydrated.')
-    if (names.includes('Fatigue') || names.includes('Insomnia'))
-      msgs.push('Rest is important. Try a consistent sleep schedule.')
-    if (msgs.length === 0) msgs.push('These appear to be common discomforts. Rest and monitor how you feel.')
-    names.forEach(n => { if (DOCTOR_MAP[n]) docs.push(...DOCTOR_MAP[n]) })
-    const unique = docs.filter((d, i, a) => a.findIndex(x => x.type === d.type) === i)
-    if (unique.length === 0) unique.push({ type: '✅ GP / OB-GYN', reason: 'Regular prenatal check-up recommended' })
-    return { text: msgs.join(' '), doctors: unique }
+  const analyze = (names: string[]): SymptomAnalysis => {
+    const set = new Set(names)
+    const count = set.size
+
+    const homeRemedies: string[] = []
+    const restAdvice: string[] = []
+    const seeDoctorWhen: string[] = []
+
+    if (set.has('Nausea')) {
+      homeRemedies.push('Try small, frequent meals (dry toast/crackers) and sip water or ginger tea.')
+      restAdvice.push('Avoid strong smells; rest after eating if you feel queasy.')
+      seeDoctorWhen.push('Vomiting is persistent, you can’t keep fluids down, or you feel very weak.')
+    }
+    if (set.has('Headache')) {
+      homeRemedies.push('Drink water, eat a small snack, and rest in a dark, quiet room.')
+      restAdvice.push('Limit screens; try gentle neck/shoulder stretches.')
+      seeDoctorWhen.push('Headache is severe, sudden, or comes with vision changes or swelling.')
+    }
+    if (set.has('Cramps')) {
+      homeRemedies.push('Warm compress on the lower abdomen and gentle stretching can help.')
+      restAdvice.push('Slow walking and hydration may reduce mild cramping.')
+      seeDoctorWhen.push('Cramps are severe, worsening, or associated with bleeding, fever, or fainting.')
+    }
+    if (set.has('Back pain')) {
+      homeRemedies.push('Use a pillow for support; try a warm shower and gentle posture breaks.')
+      restAdvice.push('Avoid heavy lifting; rest with knees supported.')
+      seeDoctorWhen.push('Back pain is severe, with fever, burning urination, or numbness/weakness.')
+    }
+    if (set.has('Fatigue')) {
+      homeRemedies.push('Eat balanced meals with iron-rich foods (lentils, eggs, greens).')
+      restAdvice.push('Short naps and a consistent bedtime help.')
+      seeDoctorWhen.push('Fatigue is extreme, with dizziness, shortness of breath, or palpitations.')
+    }
+    if (set.has('Mood swings')) {
+      homeRemedies.push('Talk to someone you trust; short walks and breathing exercises can help.')
+      restAdvice.push('Sleep and regular meals reduce irritability for many people.')
+      seeDoctorWhen.push('Mood feels overwhelming, persistent, or you feel unsafe.')
+    }
+
+    // Status logic (non-diagnostic): more symptoms → higher concern,
+    // and some combos are more likely to need medical check-in.
+    const concerningCombos =
+      (set.has('Headache') && set.has('Back pain') && set.has('Fatigue')) ||
+      (set.has('Cramps') && set.has('Nausea') && set.has('Fatigue'))
+
+    const status: SymptomStatus =
+      concerningCombos || count >= 4 ? 'Concerning' : count >= 2 ? 'Moderate' : 'Good'
+
+    const summary =
+      status === 'Good'
+        ? 'These symptoms are common for many people. Use simple comfort steps and monitor changes.'
+        : status === 'Moderate'
+          ? 'You have a few symptoms together. Focus on rest, hydration, and comfort steps today.'
+          : 'Several symptoms together can be harder on your body. If anything feels severe or unusual, contact a clinician.'
+
+    // Always include clear safety-net guidance.
+    seeDoctorWhen.unshift('If you have heavy bleeding, chest pain, trouble breathing, fainting, or severe pain—seek urgent care.')
+
+    return {
+      status,
+      summary,
+      homeRemedies: homeRemedies.length ? homeRemedies : ['Hydrate, eat something light, and take it easy today.'],
+      restAdvice: restAdvice.length ? restAdvice : ['Rest when you can and reduce strenuous activity.'],
+      seeDoctorWhen,
+    }
   }
 
   const handleLog = async () => {
@@ -190,21 +221,39 @@ export default function SymptomsPage() {
         {analysis && (
           <div className="rounded-3xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 p-5 space-y-4">
             <div>
-              <p className="font-bold text-foreground mb-2">🔍 What this might mean</p>
-              <p className="text-sm text-muted-foreground leading-relaxed">{analysis.text}</p>
+              <p className="font-bold text-foreground mb-2">Your status</p>
+              <div className="flex items-center gap-2">
+                <span
+                  className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                    analysis.status === 'Good'
+                      ? 'bg-emerald-100 text-emerald-700'
+                      : analysis.status === 'Moderate'
+                        ? 'bg-amber-100 text-amber-700'
+                        : 'bg-red-100 text-red-700'
+                  }`}
+                >
+                  {analysis.status}
+                </span>
+                <p className="text-sm text-muted-foreground">{analysis.summary}</p>
+              </div>
             </div>
             <div>
-              <p className="font-bold text-foreground mb-3">👩⚕️ Who to see</p>
-              <div className="space-y-2">
-                {analysis.doctors.map((d, i) => (
-                  <div key={i} className="bg-white rounded-2xl p-3 flex items-start gap-3">
-                    <div className="flex-1">
-                      <p className="font-semibold text-sm">{d.type}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{d.reason}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <p className="font-bold text-foreground mb-2">Home remedies</p>
+              <ul className="space-y-1 text-sm text-muted-foreground">
+                {analysis.homeRemedies.map((t, i) => <li key={i}>• {t}</li>)}
+              </ul>
+            </div>
+            <div>
+              <p className="font-bold text-foreground mb-2">When to rest</p>
+              <ul className="space-y-1 text-sm text-muted-foreground">
+                {analysis.restAdvice.map((t, i) => <li key={i}>• {t}</li>)}
+              </ul>
+            </div>
+            <div>
+              <p className="font-bold text-foreground mb-2">When to see a doctor</p>
+              <ul className="space-y-1 text-sm text-muted-foreground">
+                {analysis.seeDoctorWhen.map((t, i) => <li key={i}>• {t}</li>)}
+              </ul>
             </div>
           </div>
         )}

@@ -6,9 +6,12 @@ import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
 import { TrackingModeToggle } from '@/components/tracking-mode-toggle'
 import { MobileNav } from '@/components/mobile-nav'
-import { ChevronLeft, ChevronRight, CalendarDays, Flag, User } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Flag, Plus, User } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
 
 interface CycleLog {
   date: string
@@ -16,15 +19,32 @@ interface CycleLog {
   symptoms?: string[]
 }
 
+type Appointment = {
+  id: string
+  title: string
+  scheduled_at: string
+  notes: string | null
+  reminder_minutes: number | null
+}
+
 export default function CalendarPage() {
-  const [currentDate, setCurrentDate] = useState(new Date(2025, 3, 1))
+  const [currentDate, setCurrentDate] = useState(new Date())
   const [cycleLogs, setCycleLogs] = useState<Map<string, CycleLog>>(new Map())
   const [user, setUser] = useState<{ id: string } | null>(null)
   const [profile, setProfile] = useState<any>(null)
   const [mode, setMode] = useState<'period' | 'pregnancy'>('period')
   const [loading, setLoading] = useState(true)
+  const [appointments, setAppointments] = useState<Appointment[]>([])
+  const [apptOpen, setApptOpen] = useState(false)
+  const [apptTitle, setApptTitle] = useState('')
+  const [apptDate, setApptDate] = useState(new Date().toISOString().split('T')[0])
+  const [apptTime, setApptTime] = useState('09:00')
+  const [apptReminder, setApptReminder] = useState('30')
+  const [apptNotes, setApptNotes] = useState('')
+  const [savingAppt, setSavingAppt] = useState(false)
   const router = useRouter()
   const supabase = createClient()
+  const { toast } = useToast()
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -64,6 +84,14 @@ export default function CalendarPage() {
           logsMap.set(log.date, log)
         })
         setCycleLogs(logsMap)
+
+        const { data: apptData } = await supabase
+          .from('appointments')
+          .select('*')
+          .eq('user_id', authUser.id)
+          .order('scheduled_at', { ascending: true })
+          .limit(50)
+        setAppointments((apptData || []) as any)
       } catch (err) {
         console.error('Auth check error:', err)
         router.push('/auth/login')
@@ -110,6 +138,57 @@ export default function CalendarPage() {
   const daysInMonth = getDaysInMonth(currentDate)
   const firstDay = getFirstDayOfMonth(currentDate)
 
+  const monthAppointments = appointments.filter((a) => {
+    const d = new Date(a.scheduled_at)
+    return d.getFullYear() === currentDate.getFullYear() && d.getMonth() === currentDate.getMonth()
+  })
+
+  const upcomingAppointments = appointments
+    .filter((a) => new Date(a.scheduled_at).getTime() >= Date.now())
+    .slice(0, 5)
+
+  const saveAppointment = async () => {
+    if (!user?.id) return
+    const title = apptTitle.trim()
+    if (!title) {
+      toast({ title: 'Appointment title is required', variant: 'destructive' })
+      return
+    }
+
+    setSavingAppt(true)
+    try {
+      const reminderMinutes = Number(apptReminder || 30)
+      const scheduled = new Date(`${apptDate}T${apptTime}:00`)
+      if (Number.isNaN(scheduled.getTime())) throw new Error('Invalid date/time')
+
+      const { error } = await supabase.from('appointments').insert({
+        user_id: user.id,
+        title,
+        scheduled_at: scheduled.toISOString(),
+        notes: apptNotes.trim() || null,
+        reminder_minutes: Number.isFinite(reminderMinutes) ? reminderMinutes : 30,
+      })
+      if (error) throw error
+
+      const { data: apptData } = await supabase
+        .from('appointments')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('scheduled_at', { ascending: true })
+        .limit(50)
+      setAppointments((apptData || []) as any)
+
+      setApptOpen(false)
+      setApptTitle('')
+      setApptNotes('')
+      toast({ title: 'Appointment saved' })
+    } catch (err: any) {
+      toast({ title: 'Unable to save appointment', description: err?.message || 'Try again.', variant: 'destructive' })
+    } finally {
+      setSavingAppt(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -145,6 +224,31 @@ export default function CalendarPage() {
                 ? 'Track appointments and milestones week by week.'
                 : `Cycle length ${profile?.cycle_length || 28} days • period length ${profile?.period_length || 5} days`}
             </p>
+            <Dialog open={apptOpen} onOpenChange={setApptOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add appointment
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>New appointment</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-3">
+                  <Input value={apptTitle} onChange={(e) => setApptTitle(e.target.value)} placeholder="Title (e.g. Prenatal checkup)" />
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input type="date" value={apptDate} onChange={(e) => setApptDate(e.target.value)} />
+                    <Input type="time" value={apptTime} onChange={(e) => setApptTime(e.target.value)} />
+                  </div>
+                  <Input value={apptReminder} onChange={(e) => setApptReminder(e.target.value)} placeholder="Reminder minutes (e.g. 30)" />
+                  <Input value={apptNotes} onChange={(e) => setApptNotes(e.target.value)} placeholder="Notes (optional)" />
+                  <Button onClick={saveAppointment} disabled={savingAppt} className="w-full">
+                    {savingAppt ? 'Saving...' : 'Save appointment'}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
 
           <Card className="rounded-2xl border-0 bg-white/70 p-5 shadow-none">
@@ -181,6 +285,7 @@ export default function CalendarPage() {
                   const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day)
                   const dateStr = date.toISOString().split('T')[0]
                   const log = cycleLogs.get(dateStr)
+                  const apptCount = monthAppointments.filter((a) => a.scheduled_at.startsWith(dateStr)).length
 
                   const baseClass = mode === 'pregnancy' ? 'bg-cyan-50 text-foreground hover:bg-cyan-100' : 'bg-gray-50 text-foreground hover:bg-gray-100'
 
@@ -191,7 +296,10 @@ export default function CalendarPage() {
                         mode === 'period' && log ? getPhaseColor(log.phase) : baseClass
                       } cursor-pointer`}
                     >
-                      {day}
+                      <div className="relative">
+                        {day}
+                        {apptCount > 0 ? <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-primary" /> : null}
+                      </div>
                     </div>
                   )
                 })}
@@ -227,7 +335,7 @@ export default function CalendarPage() {
           <Card className="p-4 border-0 bg-gradient-to-br from-purple-50 to-pink-50">
             <div className="text-center">
               <div className="text-2xl font-bold text-purple-600 mb-1">
-                {mode === 'pregnancy' ? `${Math.max(1, Math.floor((new Date().getDate() % 3) + 1))}` : Array.from(cycleLogs.values()).filter((l) => l.phase === 'ovulation').length}
+                {mode === 'pregnancy' ? String(upcomingAppointments.length) : Array.from(cycleLogs.values()).filter((l) => l.phase === 'ovulation').length}
               </div>
               <p className="text-sm text-muted-foreground">{mode === 'pregnancy' ? 'Appointments this month' : 'Ovulation days'}</p>
             </div>
@@ -239,6 +347,28 @@ export default function CalendarPage() {
             </div>
           </Card>
         </div>
+
+        <Card className="glass-card border-0 p-5">
+          <p className="text-sm font-semibold">Upcoming appointments</p>
+          {upcomingAppointments.length === 0 ? (
+            <p className="mt-2 text-sm text-muted-foreground">No upcoming appointments. Add one above.</p>
+          ) : (
+            <div className="mt-3 space-y-2">
+              {upcomingAppointments.map((a) => (
+                <div key={a.id} className="flex items-center justify-between rounded-xl border bg-white p-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold">{a.title}</p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {new Date(a.scheduled_at).toLocaleString()}
+                      {a.reminder_minutes != null ? ` • reminder ${a.reminder_minutes}m` : ''}
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">Upcoming</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
       </div>
 
       <MobileNav active="calendar" />

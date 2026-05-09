@@ -70,6 +70,10 @@ CREATE TABLE IF NOT EXISTS user_profiles (
   user_id UUID NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
   full_name TEXT,
   tracking_type TEXT CHECK (tracking_type IN ('period', 'pregnancy')),
+  age INTEGER,
+  weight_kg DECIMAL(5,2),
+  height_cm DECIMAL(5,2),
+  conditions TEXT[],
   cycle_length INTEGER DEFAULT 28,
   period_length INTEGER DEFAULT 5,
   avatar_url TEXT,
@@ -83,6 +87,8 @@ ALTER TABLE pregnancy_data ENABLE ROW LEVEL SECURITY;
 ALTER TABLE health_metrics ENABLE ROW LEVEL SECURITY;
 ALTER TABLE symptoms ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE food_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE medical_results ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
 CREATE POLICY "Users can view their own data" ON cycle_logs FOR SELECT USING (auth.uid() = user_id);
@@ -150,3 +156,43 @@ CREATE POLICY "Users can view their medical results" ON medical_results FOR SELE
 CREATE POLICY "Users can insert their medical results" ON medical_results FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can view their food logs" ON food_logs FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can insert their food logs" ON food_logs FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- Emergency contacts
+CREATE TABLE IF NOT EXISTS emergency_contacts (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  phone TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT now(),
+  updated_at TIMESTAMP DEFAULT now()
+);
+
+ALTER TABLE emergency_contacts ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their emergency contacts" ON emergency_contacts FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert their emergency contacts" ON emergency_contacts FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update their emergency contacts" ON emergency_contacts FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete their emergency contacts" ON emergency_contacts FOR DELETE USING (auth.uid() = user_id);
+
+CREATE INDEX IF NOT EXISTS idx_emergency_contacts_user ON emergency_contacts(user_id, created_at DESC);
+
+-- Appointments / reminders
+CREATE TABLE IF NOT EXISTS appointments (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  scheduled_at TIMESTAMPTZ NOT NULL,
+  notes TEXT,
+  reminder_minutes INTEGER DEFAULT 30,
+  created_at TIMESTAMP DEFAULT now(),
+  updated_at TIMESTAMP DEFAULT now()
+);
+
+ALTER TABLE appointments ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their appointments" ON appointments FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert their appointments" ON appointments FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update their appointments" ON appointments FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete their appointments" ON appointments FOR DELETE USING (auth.uid() = user_id);
+
+CREATE INDEX IF NOT EXISTS idx_appointments_user_time ON appointments(user_id, scheduled_at ASC);

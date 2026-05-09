@@ -233,9 +233,9 @@ export default function DashboardPage() {
             <div className="grid gap-3 sm:grid-cols-2">
               {[
                 [d.links.calendar, '/calendar', CalendarCheck],
-                [d.links.symptom, '/tracking/logs', NotebookPen],
-                [d.links.mood, '/tracking/logs', ChartLine],
-                [d.links.health, '/tracking/logs', HeartPulse],
+                [d.links.symptom, '/symptoms', NotebookPen],
+                [d.links.mood, '/symptoms', ChartLine],
+                [d.links.health, '/health-metrics', HeartPulse],
                 [d.links.nutrition, '/nutrition', Apple],
               ].map(([title, href, Icon]) => (
                 <Link key={title as string} href={href as string}>
@@ -290,8 +290,8 @@ export default function DashboardPage() {
               {[
                 [d.links.pregnancy, '/pregnancy', Baby],
                 [d.links.appointment, '/calendar', AlarmClock],
-                [d.links.symptoms_notes, '/tracking/logs', NotebookPen],
-                [d.links.wellness, '/tracking/logs', ChartLine],
+                [d.links.symptoms_notes, '/symptoms', NotebookPen],
+                [d.links.wellness, '/health-metrics', ChartLine],
                 [d.links.doctor, '/doctor', Stethoscope],
                 [d.links.labs, '/labs', TestTube],
               ].map(([title, href, Icon]) => (
@@ -315,12 +315,12 @@ export default function DashboardPage() {
             <Link href="/calendar">
               <Button size="sm">{d.open_calendar}</Button>
             </Link>
-            <Link href={mode === 'period' ? '/tracking/logs' : '/pregnancy'}>
+            <Link href={mode === 'period' ? '/symptoms' : '/pregnancy'}>
               <Button size="sm" variant="outline">
                 {mode === 'period' ? d.log_today : d.view_weekly}
               </Button>
             </Link>
-            <Link href="/tracking/logs">
+            <Link href={mode === 'period' ? '/symptoms' : '/health-metrics'}>
               <Button size="sm" variant="outline">{d.get_advice}</Button>
             </Link>
             <Link href="/education">

@@ -10,7 +10,8 @@ import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { TrackingModeToggle } from '@/components/tracking-mode-toggle'
 import { MobileNav } from '@/components/mobile-nav'
-import { User, Plus, Heart, TrendingUp } from 'lucide-react'
+import { User, Plus, Heart } from 'lucide-react'
+import { getPregnancyWeekInfo } from '@/lib/pregnancy/week-data'
 
 interface PregnancyData {
   id: string
@@ -128,6 +129,7 @@ export default function PregnancyPage() {
   const currentWeek = pregnancyData.current_week || 20
   const progress = (currentWeek / 40) * 100
   const weeksRemaining = 40 - currentWeek
+  const weekInfo = getPregnancyWeekInfo(currentWeek)
 
   if (mode === 'period') {
     return (
@@ -230,24 +232,22 @@ export default function PregnancyPage() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-muted-foreground mb-1">
-                    Baby Weight
+                    Baby size this week
                   </label>
                   <div className="text-2xl font-bold text-foreground">
-                    {pregnancyData.baby_weight || 'Not recorded'} g
+                    {weekInfo.babySize}
                   </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-muted-foreground mb-1">
-                    Baby Length
+                    Development milestone
                   </label>
-                  <div className="text-2xl font-bold text-foreground">
-                    {pregnancyData.baby_height || 'Not recorded'} cm
-                  </div>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{weekInfo.milestone}</p>
                 </div>
-                <Button variant="outline" className="w-full" onClick={() => router.push('/tracking/logs')}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Update Baby Measurements
-                </Button>
+                <div className="rounded-xl bg-white/70 p-4">
+                  <p className="text-sm font-semibold text-foreground">Tip for week {weekInfo.week}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{weekInfo.tip}</p>
+                </div>
               </div>
             </Card>
 
@@ -267,20 +267,9 @@ export default function PregnancyPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <Button variant="outline" className="justify-start" onClick={() => router.push('/tracking/logs')}>
-                    <Heart className="w-4 h-4 mr-2" />
-                    Heart Health
-                  </Button>
-                  <Button variant="outline" className="justify-start" onClick={() => router.push('/tracking/logs')}>
-                    <TrendingUp className="w-4 h-4 mr-2" />
-                    Weight Tracking
-                  </Button>
-                </div>
-
-                <Button variant="outline" className="w-full" onClick={() => router.push('/tracking/logs')}>
+                <Button variant="outline" className="w-full" onClick={() => router.push('/symptoms')}>
                   <Plus className="w-4 h-4 mr-2" />
-                  Log Health Update
+                  Log symptoms & get advice
                 </Button>
               </div>
             </Card>

@@ -13,6 +13,11 @@ export default function OnboardingPage() {
   const [periodLengthInput, setPeriodLengthInput] = useState('5')
   const [pregnancyStartDate, setPregnancyStartDate] = useState('')
   const [pregnancyWeek, setPregnancyWeek] = useState('')
+  const [pregnancyMonth, setPregnancyMonth] = useState('')
+  const [age, setAge] = useState('')
+  const [weightKg, setWeightKg] = useState('')
+  const [heightCm, setHeightCm] = useState('')
+  const [conditions, setConditions] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [step, setStep] = useState(1)
@@ -42,19 +47,32 @@ export default function OnboardingPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('No user found')
 
+      const parsedAge = age ? Number(age) : null
+      const parsedWeight = weightKg ? Number(weightKg) : null
+      const parsedHeight = heightCm ? Number(heightCm) : null
+      const parsedConditions = conditions
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+
       const { error } = await supabase.from('user_profiles').upsert({
         user_id: user.id,
         tracking_type: trackingType,
         cycle_length: parseInt(cycleLengthInput),
         period_length: parseInt(periodLengthInput),
+        age: parsedAge,
+        weight_kg: parsedWeight,
+        height_cm: parsedHeight,
+        conditions: parsedConditions.length ? parsedConditions : null,
       }, { onConflict: 'user_id' })
 
       if (error) throw error
 
       if (trackingType === 'pregnancy') {
-        const weekValue = Number(pregnancyWeek || 0)
+        const weekFromMonth = Number(pregnancyMonth || 0) ? Math.max(1, Math.round(Number(pregnancyMonth) * 4)) : 0
+        const weekValue = Number(pregnancyWeek || 0) || weekFromMonth
         if (!pregnancyStartDate && !weekValue) {
-          throw new Error('Provide pregnancy start date or current week.')
+          throw new Error('Provide pregnancy start date, current week, or current month.')
         }
         const startDate = pregnancyStartDate || (() => {
           const d = new Date()
@@ -134,6 +152,46 @@ export default function OnboardingPage() {
           <Card className="p-8">
             <h2 className="text-2xl font-bold text-foreground mb-6">Customize Your Cycle</h2>
             <div className="space-y-6">
+              <div className="grid gap-3 sm:grid-cols-3">
+                <input
+                  type="number"
+                  value={age}
+                  onChange={(e) => setAge(e.target.value)}
+                  min="12"
+                  max="60"
+                  placeholder="Age"
+                  title="Age"
+                  className="w-full px-4 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                <input
+                  type="number"
+                  value={weightKg}
+                  onChange={(e) => setWeightKg(e.target.value)}
+                  min="20"
+                  max="250"
+                  placeholder="Weight (kg)"
+                  title="Weight in kilograms"
+                  className="w-full px-4 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                <input
+                  type="number"
+                  value={heightCm}
+                  onChange={(e) => setHeightCm(e.target.value)}
+                  min="80"
+                  max="220"
+                  placeholder="Height (cm)"
+                  title="Height in centimeters"
+                  className="w-full px-4 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              <input
+                value={conditions}
+                onChange={(e) => setConditions(e.target.value)}
+                placeholder="Existing conditions (optional, comma-separated)"
+                title="Existing conditions"
+                className="w-full px-4 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+
               <div>
                 <label htmlFor="cycle-length" className="block text-sm font-medium text-foreground mb-2">
                   Average Cycle Length (days)
@@ -206,6 +264,43 @@ export default function OnboardingPage() {
               {isPregnant ? (
                 <div className="grid gap-3 sm:grid-cols-2">
                   <input
+                    type="number"
+                    value={age}
+                    onChange={(e) => setAge(e.target.value)}
+                    min="12"
+                    max="60"
+                    placeholder="Age"
+                    title="Age"
+                    className="w-full rounded-lg border border-input px-4 py-2"
+                  />
+                  <input
+                    type="number"
+                    value={weightKg}
+                    onChange={(e) => setWeightKg(e.target.value)}
+                    min="20"
+                    max="250"
+                    placeholder="Weight (kg)"
+                    title="Weight in kilograms"
+                    className="w-full rounded-lg border border-input px-4 py-2"
+                  />
+                  <input
+                    type="number"
+                    value={heightCm}
+                    onChange={(e) => setHeightCm(e.target.value)}
+                    min="80"
+                    max="220"
+                    placeholder="Height (cm)"
+                    title="Height in centimeters"
+                    className="w-full rounded-lg border border-input px-4 py-2"
+                  />
+                  <input
+                    value={conditions}
+                    onChange={(e) => setConditions(e.target.value)}
+                    placeholder="Existing conditions (optional)"
+                    title="Existing conditions"
+                    className="w-full rounded-lg border border-input px-4 py-2"
+                  />
+                  <input
                     type="date"
                     value={pregnancyStartDate}
                     onChange={(e) => setPregnancyStartDate(e.target.value)}
@@ -218,6 +313,15 @@ export default function OnboardingPage() {
                     placeholder="Current week"
                     min="1"
                     max="40"
+                    className="w-full rounded-lg border border-input px-4 py-2"
+                  />
+                  <input
+                    type="number"
+                    value={pregnancyMonth}
+                    onChange={(e) => setPregnancyMonth(e.target.value)}
+                    placeholder="Or current month (1-9)"
+                    min="1"
+                    max="9"
                     className="w-full rounded-lg border border-input px-4 py-2"
                   />
                 </div>
