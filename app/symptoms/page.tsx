@@ -21,6 +21,7 @@ type SymptomStatus = 'Good' | 'Moderate' | 'Concerning'
 
 type SymptomAnalysis = {
   status: SymptomStatus
+  selectedSymptoms: string[]
   summary: string
   homeRemedies: string[]
   restAdvice: string[]
@@ -116,6 +117,7 @@ export default function SymptomsPage() {
 
     return {
       status,
+      selectedSymptoms: names,
       summary,
       homeRemedies: homeRemedies.length ? homeRemedies : ['Hydrate, eat something light, and take it easy today.'],
       restAdvice: restAdvice.length ? restAdvice : ['Rest when you can and reduce strenuous activity.'],
@@ -211,7 +213,7 @@ export default function SymptomsPage() {
                 disabled={loading}
                 className="w-full rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 text-white py-4 font-bold text-base active:scale-95 transition-transform disabled:opacity-60"
               >
-                {loading ? 'Saving... 🌸' : 'Log & get insights ✨'}
+                {loading ? 'Saving and analyzing...' : 'Save and Analyze'}
               </button>
             </div>
           </DialogContent>
@@ -236,6 +238,10 @@ export default function SymptomsPage() {
                 </span>
                 <p className="text-sm text-muted-foreground">{analysis.summary}</p>
               </div>
+            </div>
+            <div>
+              <p className="font-bold text-foreground mb-2">Selected symptoms</p>
+              <p className="text-sm text-muted-foreground">{analysis.selectedSymptoms.join(', ')}</p>
             </div>
             <div>
               <p className="font-bold text-foreground mb-2">Home remedies</p>
