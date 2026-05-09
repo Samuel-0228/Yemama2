@@ -4,11 +4,14 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { Playfair_Display } from 'next/font/google'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { useI18n } from '@/lib/i18n'
 import { LanguageSwitcher } from '@/components/language-switcher'
+
+const brandFont = Playfair_Display({ subsets: ['latin'], weight: ['700'] })
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -70,7 +73,7 @@ export default function LoginPage() {
               <div className="mb-4 flex justify-end">
                 <LanguageSwitcher />
               </div>
-              <h1 className="mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-4xl font-bold text-transparent">
+              <h1 className={`${brandFont.className} mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-5xl font-bold tracking-wide text-transparent sm:text-6xl`}>
                 {t.app_name}
               </h1>
               <p className="text-lg text-muted-foreground">{a.login_title}</p>
