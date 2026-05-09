@@ -92,7 +92,8 @@ export default function DashboardPage() {
             .order('date', { ascending: false })
             .limit(90)
 
-          cycleRows = (fallback.data ?? []).map((row: { id: string; date: string; phase: string }) => ({
+          type LegacyCycleLog = { id: string; date: string; phase: string }
+          cycleRows = (fallback.data ?? []).map((row: LegacyCycleLog) => ({
             id: row.id,
             date: row.date,
             is_period: row.phase === 'period',
@@ -155,12 +156,14 @@ export default function DashboardPage() {
     try {
       const today = format(new Date(), 'yyyy-MM-dd')
 
+      const symptomDetails = `flow=${flow}; mood=${mood}`
+
       await supabase.from('symptoms').insert({
         user_id: userId,
         date: today,
-        symptom_name: `${symptomName.trim()} (${flow}, ${mood})`,
+        symptom_name: symptomName.trim(),
         intensity: 3,
-        notes: symptomNotes.trim() || null,
+        notes: [symptomDetails, symptomNotes.trim()].filter(Boolean).join(' | ') || null,
       })
 
       if (mode === 'cycle') {

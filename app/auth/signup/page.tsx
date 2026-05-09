@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { MODE_STORAGE_KEY } from '@/components/mode-provider'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
@@ -53,7 +54,7 @@ export default function SignupPage() {
       const { data, error: anonError } = await supabase.auth.signInAnonymously()
       if (anonError) throw anonError
 
-      const localMode = window.localStorage.getItem('yemama_mode')
+      const localMode = window.localStorage.getItem(MODE_STORAGE_KEY)
       await supabase.from('user_profiles').upsert({
         user_id: data.user?.id,
         tracking_type: localMode === 'pregnancy' ? 'pregnancy' : 'period',

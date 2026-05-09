@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/client'
 
 type Mode = 'cycle' | 'pregnancy'
 
+export const MODE_STORAGE_KEY = 'yemama_mode'
+
 type ModeContextValue = {
   mode: Mode
   loading: boolean
@@ -13,7 +15,10 @@ type ModeContextValue = {
 }
 
 const ModeContext = createContext<ModeContextValue | null>(null)
-const STORAGE_KEY = 'yemama_mode'
+
+type ProfileTrackingRow = {
+  tracking_type: string | null
+}
 
 function fromTrackingType(value: string | null | undefined): Mode {
   return value === 'pregnancy' ? 'pregnancy' : 'cycle'
@@ -34,7 +39,7 @@ export function ModeProvider({ children }: { children: React.ReactNode }) {
 
     const hydrate = async () => {
       try {
-        const localMode = typeof window !== 'undefined' ? (window.localStorage.getItem(STORAGE_KEY) as Mode | null) : null
+        const localMode = window.localStorage.getItem(MODE_STORAGE_KEY) as Mode | null
         if (localMode === 'cycle' || localMode === 'pregnancy') {
           setModeState(localMode)
         }
@@ -54,16 +59,14 @@ export function ModeProvider({ children }: { children: React.ReactNode }) {
           .from('user_profiles')
           .select('tracking_type')
           .eq('user_id', user.id)
-          .maybeSingle()
+          .maybeSingle<ProfileTrackingRow>()
 
         if (!mounted) return
 
         if (profile?.tracking_type) {
           const nextMode = fromTrackingType(profile.tracking_type)
           setModeState(nextMode)
-          if (typeof window !== 'undefined') {
-            window.localStorage.setItem(STORAGE_KEY, nextMode)
-          }
+          window.localStorage.setItem(MODE_STORAGE_KEY, nextMode)
         }
       } finally {
         if (mounted) {
@@ -72,7 +75,7 @@ export function ModeProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    hydrate()
+    void hydrate()
 
     return () => {
       mounted = false
@@ -81,9 +84,7 @@ export function ModeProvider({ children }: { children: React.ReactNode }) {
 
   const setMode = useCallback(async (nextMode: Mode) => {
     setModeState(nextMode)
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(STORAGE_KEY, nextMode)
-    }
+    window.localStorage.setItem(MODE_STORAGE_KEY, nextMode)
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {

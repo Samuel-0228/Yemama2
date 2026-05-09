@@ -17,12 +17,12 @@ export async function POST(request: NextRequest) {
     const apiKey = process.env.GEMINI_API_KEY
     if (!apiKey) {
       return NextResponse.json({
-        answer: 'Gemini API key is missing. Add GEMINI_API_KEY to your environment variables.',
+        answer: 'The assistant is not configured right now. Please try again later.',
       })
     }
 
     const prompt = [
-      'You are a women health tracking assistant.',
+      "You are a women's health tracking assistant.",
       `Current mode: ${body.mode ?? 'cycle'}.`,
       `Recent context: ${body.contextSummary ?? 'No context provided.'}`,
       `Question: ${body.question}`,
