@@ -5,6 +5,7 @@ import './globals.css'
 import { GlobalBackButton } from '@/components/global-back-button'
 import { FloatingEmergencyButton } from '@/components/floating-emergency-button'
 import { AppointmentReminders } from '@/components/appointment-reminders'
+import { SiteFooter } from '@/components/site-footer'
 import { I18nProvider } from '@/lib/i18n'
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-geist' })
@@ -29,7 +30,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body className="font-sans antialiased bg-background">
         <I18nProvider>
           <GlobalBackButton />
-          {children}
+          <main>{children}</main>
+          <SiteFooter />
           <FloatingEmergencyButton />
           <AppointmentReminders />
         </I18nProvider>
