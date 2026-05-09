@@ -1,216 +1,89 @@
-# yemama - Pregnancy & Period Tracker
+# yemama - Dual Mode Health Tracker
 
-A beautiful, compassionate health tracking app for women to monitor their pregnancy journeys and menstrual cycles. Built with Next.js 16, Supabase, and Tailwind CSS.
+Mobile-first health tracking web app with two full modes:
+- Cycle Mode
+- Pregnancy Mode
 
-## Features
+Built with Next.js App Router, Tailwind CSS, Supabase, and Gemini API.
 
-### Authentication & Onboarding
-- Secure email/password authentication via Supabase
-- Personalized onboarding flow
-- Choose between period tracking or pregnancy tracking
-- Customizable cycle preferences
+## Core Features
 
-### Dashboard
-- Beautiful health tracking cards (Heart Rate, Glucose, BP, Steps, Sleep, Diet)
-- Quick access to main features
-- Mother-child illustrations on every section
-- Responsive grid layout with gradient cards
+- Content-rich landing page with hero, feature cards, testimonials, trust section, and footer
+- Global mode toggle in navbar (`Cycle Mode` ↔ `Pregnancy Mode`)
+- Mode persisted in local app state and Supabase `user_profiles.tracking_type`
+- Cycle Mode:
+  - current cycle day, next period, fertility window
+  - color-coded calendar
+  - symptom logging and ovulation prediction
+  - chart insights
+- Pregnancy Mode:
+  - current week, baby size analogy, trimester progress
+  - weekly updates, daily tips, appointment reminders
+  - period/ovulation features disabled
+- AI Health Assistant with Gemini API and non-diagnostic safety disclaimers
+- Auth:
+  - email/password
+  - optional anonymous mode
+- Privacy-first profile controls with PIN/biometric lock UI toggles
+- Loading, empty, and friendly error states across key views
 
-### Calendar
-- Monthly calendar view with cycle phase tracking
-- Color-coded phases: Period (red), Fertile (pink), Ovulation (purple), Luteal (blue)
-- Cycle statistics and insights
-- Illustrated cycle phases with legend
+## Database Tables
 
-### Pregnancy Tracking
-- Current week display with baby development info
-- Baby weight and height tracking
-- Mother's health monitoring
-- Due date countdown
-- Progress visualization
-- Fetal development illustrations
+Existing + required tables are supported in `lib/supabase/schema.sql`, including:
+- `users`
+- `cycles`
+- `symptoms`
+- `pregnancy_logs`
 
-### Health Metrics
-Individual tracking pages for:
-- Heart Rate (PR Tracker)
-- Blood Pressure (BP)
-- Blood Glucose
-- Steps/Activity
-- Sleep Duration
-- Nutrition/Diet
-
-### Educational Content
-- Prenatal nutrition guides
-- Pregnancy exercise routines
-- Cycle education
-- Mental health resources
-- Course filtering by category
-- Illustrated educational materials
-
-### Profile Management
-- User profile settings
-- Cycle/pregnancy preferences
-- Health statistics
-- Account management
-- Sign out functionality
-
-## Design
-
-### Color Scheme
-- **Primary**: Magenta/Pink (#E91E8C equivalent)
-- **Secondary**: Purple (#8B5CF6)
-- **Accents**: Coral, Teal
-- **Background**: Soft pastels (cream, light pink, light blue)
-
-### Illustrations
-Mother and child illustrations integrated throughout:
-- Dashboard hero illustration
-- Calendar phase visualization
-- Pregnancy development stages
-- Health tracking guidance
-- Educational course covers
-- Profile relationship illustration
-
-## Technology Stack
-
-- **Framework**: Next.js 16 (App Router)
-- **Database**: Supabase (PostgreSQL with RLS)
-- **Authentication**: Supabase Auth
-- **UI Components**: shadcn/ui
-- **Styling**: Tailwind CSS
-- **Images**: Next.js Image component
-- **Icons**: Lucide React
-
-## Project Structure
-
-```
-/app
-  /auth
-    - login/page.tsx
-    - signup/page.tsx
-    - onboarding/page.tsx
-  /dashboard/page.tsx
-  /calendar/page.tsx
-  /pregnancy/page.tsx
-  /profile/page.tsx
-  /education/page.tsx
-  /tracking
-    - heart/page.tsx
-    - glucose/page.tsx
-    - bp/page.tsx
-    - steps/page.tsx
-    - sleep/page.tsx
-    - diet/page.tsx
-  - layout.tsx
-  - page.tsx
-
-/lib
-  - types.ts
-  - supabase/
-    - client.ts
-    - server.ts
-    - schema.sql
-
-/public/images
-  - mother-child-dashboard.jpg
-  - mother-health-tracking.jpg
-  - cycle-calendar.jpg
-  - pregnancy-development.jpg
-  - education-nutrition.jpg
-  - education-exercise.jpg
-  - symptoms-tracking.jpg
-  - profile-mother.jpg
-
-/components/ui
-  - [shadcn/ui components]
-```
-
-## Database Schema
-
-### Tables
-1. **user_profiles** - User tracking preferences and metadata
-2. **cycle_logs** - Period and cycle phase tracking
-3. **pregnancy_data** - Pregnancy information and milestones
-4. **health_metrics** - Daily health data (heart rate, BP, glucose, steps, sleep)
-5. **symptoms** - Symptom logging with intensity tracking
-6. **educational_content** - Educational articles and courses
-
-### Security
-- Row-level security (RLS) enabled on all tables
-- Users can only access their own data
-- Educational content is publicly readable
-
-## Setup Instructions
-
-### Prerequisites
-- Node.js 18+
-- pnpm (or npm/yarn)
-- Supabase account
-
-### Environment Variables
-Create a `.env.local` file:
-
-```
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-```
-
-### Installation
+## Setup
 
 1. Install dependencies:
-```bash
-pnpm install
-```
-
-2. Set up Supabase schema:
-   - Go to Supabase dashboard
-   - Run the SQL from `lib/supabase/schema.sql`
-
-3. Start development server:
-```bash
-pnpm dev
-```
-
-4. Open http://localhost:3000
-
-## Deployment
-
-The app is ready to deploy to Vercel:
 
 ```bash
-vercel deploy
+npm install
 ```
 
-Make sure to add environment variables in Vercel project settings.
+2. Create env file:
 
-## Key Features Implemented
+```bash
+cp .env.example .env.local
+```
 
-✅ Full authentication system with email/password
-✅ Cycle tracking with calendar visualization
-✅ Pregnancy progress monitoring
-✅ Health metrics dashboard
-✅ Educational content library
-✅ Mother-child illustrations on every page
-✅ Responsive mobile-first design
-✅ Bottom navigation for easy access
-✅ User profile management
-✅ Real-time data syncing with Supabase
+3. Fill `.env.local` values:
 
-## Future Enhancements
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `GEMINI_API_KEY`
 
-- Push notifications for cycle predictions
-- Data export (PDF, CSV)
-- Social features (share progress with partner)
-- AI-powered health insights
-- Wearable integration (Apple Watch, Fitbit)
-- Dark mode toggle
-- Multi-language support
-- Community forum
+4. Apply database schema in Supabase SQL editor using:
 
-## License
+- `lib/supabase/schema.sql`
 
-MIT
+5. Run locally:
 
-## Brand Name
+```bash
+npm run dev
+```
 
-**yemama** - Your compassionate companion for pregnancy and period tracking
+## Build
+
+```bash
+npm run build
+npm start
+```
+
+## Vercel Deployment
+
+1. Push branch to GitHub
+2. Import repo in Vercel
+3. Set environment variables in Vercel project settings:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `GEMINI_API_KEY`
+4. Deploy
+
+## Performance Notes
+
+- Uses Next.js `Image` for optimized image loading
+- Mobile-first responsive layouts
+- Mode-aware rendering hides irrelevant UI for cleaner navigation

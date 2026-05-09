@@ -1,268 +1,143 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useMemo, useState } from 'react'
+import { addDays, format, startOfMonth } from 'date-fns'
 import { createClient } from '@/lib/supabase/client'
-import Link from 'next/link'
-import Image from 'next/image'
+import { AppBottomNav } from '@/components/app-bottom-nav'
+import { AppNavbar } from '@/components/app-navbar'
+import { useMode } from '@/components/mode-provider'
 import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { ChevronLeft, ChevronRight, Home, Calendar, User } from 'lucide-react'
 
-interface CycleLog {
+type CycleRow = {
+  id: string
   date: string
-  phase: 'period' | 'fertile' | 'ovulation' | 'luteal'
-  symptoms?: string[]
+  is_period?: boolean
+  is_fertile?: boolean
+  is_ovulation?: boolean
+}
+
+type PregnancyLogRow = {
+  id: string
+  date: string
+  current_week: number
+  appointment_date: string | null
+  tip: string | null
 }
 
 export default function CalendarPage() {
-  const [currentDate, setCurrentDate] = useState(new Date(2025, 3, 1))
-  const [cycleLogs, setCycleLogs] = useState<Map<string, CycleLog>>(new Map())
-  const [user, setUser] = useState<any>(null)
-  const [profile, setProfile] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const router = useRouter()
   const supabase = createClient()
+  const { mode, userId } = useMode()
+  const [cycles, setCycles] = useState<CycleRow[]>([])
+  const [pregnancyLogs, setPregnancyLogs] = useState<PregnancyLogRow[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const date = new Date()
+  const monthStart = startOfMonth(date)
+  const days = new Array(35).fill(null).map((_, index) => addDays(monthStart, index))
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const { data: { user: authUser } } = await supabase.auth.getUser()
-        if (!authUser) {
-          router.push('/auth/login')
-          return
-        }
-
-        setUser(authUser)
-
-        const { data: profileData } = await supabase
-          .from('user_profiles')
-          .select('*')
-          .eq('user_id', authUser.id)
-          .single()
-
-        setProfile(profileData)
-
-        // Fetch cycle logs
-        const { data: logsData } = await supabase
-          .from('cycle_logs')
-          .select('*')
-          .eq('user_id', authUser.id)
-
-        const logsMap = new Map()
-        logsData?.forEach((log: any) => {
-          logsMap.set(log.date, log)
-        })
-        setCycleLogs(logsMap)
-      } catch (err) {
-        console.error('Auth check error:', err)
-        router.push('/auth/login')
-      } finally {
+    const run = async () => {
+      if (!userId) {
         setLoading(false)
+        return
       }
+
+      setLoading(true)
+
+      const cycleResult = await supabase
+        .from('cycles')
+        .select('id,date,is_period,is_fertile,is_ovulation')
+        .eq('user_id', userId)
+        .order('date', { ascending: false })
+        .limit(180)
+
+      const pregnancyResult = await supabase
+        .from('pregnancy_logs')
+        .select('id,date,current_week,appointment_date,tip')
+        .eq('user_id', userId)
+        .order('date', { ascending: false })
+        .limit(100)
+
+      setCycles((cycleResult.data ?? []) as CycleRow[])
+      setPregnancyLogs((pregnancyResult.data ?? []) as PregnancyLogRow[])
+      setLoading(false)
     }
 
-    checkAuth()
-  }, [])
+    void run()
+  }, [supabase, userId, mode])
 
-  const getDaysInMonth = (date: Date) => {
-    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
-  }
+  const cycleMap = useMemo(() => new Map(cycles.map((entry) => [entry.date, entry])), [cycles])
+  const appointmentList = useMemo(() => pregnancyLogs.filter((entry) => entry.appointment_date), [pregnancyLogs])
 
-  const getFirstDayOfMonth = (date: Date) => {
-    return new Date(date.getFullYear(), date.getMonth(), 1).getDay()
-  }
-
-  const getPhaseColor = (phase: string) => {
-    switch (phase) {
-      case 'period':
-        return 'bg-red-300 text-white'
-      case 'fertile':
-        return 'bg-pink-300 text-white'
-      case 'ovulation':
-        return 'bg-purple-400 text-white'
-      case 'luteal':
-        return 'bg-blue-300 text-white'
-      default:
-        return 'bg-gray-100 text-foreground'
-    }
-  }
-
-  const handlePrevMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))
-  }
-
-  const handleNextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1))
-  }
-
-  const monthName = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })
-  const daysInMonth = getDaysInMonth(currentDate)
-  const firstDay = getFirstDayOfMonth(currentDate)
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Loading calendar...</p>
-      </div>
-    )
+  const classForDay = (entry: CycleRow | undefined) => {
+    if (!entry) return 'bg-gray-50 text-foreground'
+    if (entry.is_period) return 'bg-pink-300 text-white'
+    if (entry.is_ovulation) return 'bg-purple-400 text-white'
+    if (entry.is_fertile) return 'bg-blue-300 text-white'
+    return 'bg-gray-50 text-foreground'
   }
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      {/* Header */}
-      <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-border">
-        <div className="max-w-6xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold text-foreground">
-              {profile?.tracking_type === 'pregnancy' ? 'Pregnancy Calendar' : 'Your Cycle'}
-            </h1>
-          </div>
-        </div>
-      </div>
+      <AppNavbar
+        title={mode === 'cycle' ? 'Cycle Calendar' : 'Pregnancy Calendar'}
+        subtitle={mode === 'cycle' ? 'Color-coded period, fertility, and ovulation days' : 'Appointments, milestones, and weekly pregnancy timeline'}
+      />
 
-      {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Illustration */}
-          <div className="lg:col-span-1">
-            <Card className="p-4 border-0 overflow-hidden">
-              <Image
-                src="/images/cycle-calendar.jpg"
-                alt="Calendar illustration showing cycle phases"
-                width={400}
-                height={400}
-                className="w-full h-auto rounded-lg object-cover"
-              />
-              <div className="mt-4 space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-red-300"></div>
-                  <span className="text-sm text-foreground">Period</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-pink-300"></div>
-                  <span className="text-sm text-foreground">Fertile</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-purple-400"></div>
-                  <span className="text-sm text-foreground">Ovulation</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-blue-300"></div>
-                  <span className="text-sm text-foreground">Luteal</span>
-                </div>
-              </div>
-            </Card>
-          </div>
+      <main className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6">
+        {loading ? (
+          <Card className="border-0 p-6 text-sm text-muted-foreground">Loading calendar...</Card>
+        ) : (
+          <Card className="border-0 p-4">
+            <p className="mb-3 text-sm text-muted-foreground">{format(date, 'MMMM yyyy')}</p>
+            <div className="grid grid-cols-7 gap-2 text-center text-xs font-semibold text-muted-foreground">
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((label) => <div key={label}>{label}</div>)}
+            </div>
+            <div className="mt-2 grid grid-cols-7 gap-2">
+              {days.map((day) => {
+                const dayKey = format(day, 'yyyy-MM-dd')
+                const entry = cycleMap.get(dayKey)
 
-          {/* Calendar */}
-          <div className="lg:col-span-2">
-            <Card className="p-6 border-0">
-              {/* Month Navigation */}
-              <div className="flex items-center justify-between mb-6">
-                <Button variant="outline" size="icon" onClick={handlePrevMonth}>
-                  <ChevronLeft className="w-5 h-5" />
-                </Button>
-                <h2 className="text-2xl font-bold text-foreground text-center flex-1">{monthName}</h2>
-                <Button variant="outline" size="icon" onClick={handleNextMonth}>
-                  <ChevronRight className="w-5 h-5" />
-                </Button>
-              </div>
-
-              {/* Days of Week */}
-              <div className="grid grid-cols-7 gap-2 mb-2">
-                {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day) => (
-                  <div key={day} className="text-center font-semibold text-muted-foreground text-sm py-2">
-                    {day}
+                return (
+                  <div key={dayKey} className={`flex aspect-square items-center justify-center rounded-xl text-sm ${mode === 'cycle' ? classForDay(entry) : 'bg-blue-50 text-foreground'}`}>
+                    {format(day, 'd')}
                   </div>
+                )
+              })}
+            </div>
+          </Card>
+        )}
+
+        {mode === 'cycle' ? (
+          <Card className="border-0 p-4 text-sm text-muted-foreground">
+            <p>Period prediction and ovulation tracking are active in Cycle Mode.</p>
+            <div className="mt-3 flex flex-wrap gap-2 text-xs">
+              <span className="rounded-full bg-pink-100 px-2 py-1">Period</span>
+              <span className="rounded-full bg-blue-100 px-2 py-1">Fertile</span>
+              <span className="rounded-full bg-purple-100 px-2 py-1">Ovulation</span>
+            </div>
+          </Card>
+        ) : (
+          <Card className="border-0 p-4">
+            <h3 className="mb-3 font-semibold">Upcoming Appointments</h3>
+            {appointmentList.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No reminders yet. Add your next checkup in the dashboard.</p>
+            ) : (
+              <ul className="space-y-2">
+                {appointmentList.slice(0, 5).map((entry) => (
+                  <li key={entry.id} className="rounded-xl bg-blue-50 p-3 text-sm">
+                    <p className="font-medium">{format(new Date(entry.appointment_date as string), 'EEE, MMM d')}</p>
+                    <p className="text-muted-foreground">Week {entry.current_week} • {entry.tip ?? 'Routine checkup'}</p>
+                  </li>
                 ))}
-              </div>
-
-              {/* Calendar Days */}
-              <div className="grid grid-cols-7 gap-2">
-                {/* Empty cells for days before month starts */}
-                {Array.from({ length: firstDay }).map((_, i) => (
-                  <div key={`empty-${i}`} className="aspect-square"></div>
-                ))}
-
-                {/* Days of the month */}
-                {Array.from({ length: daysInMonth }).map((_, i) => {
-                  const day = i + 1
-                  const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day)
-                  const dateStr = date.toISOString().split('T')[0]
-                  const log = cycleLogs.get(dateStr)
-
-                  return (
-                    <div
-                      key={day}
-                      className={`aspect-square flex items-center justify-center rounded-lg font-semibold text-sm transition-all ${
-                        log ? getPhaseColor(log.phase) : 'bg-gray-50 text-foreground hover:bg-gray-100'
-                      } cursor-pointer`}
-                    >
-                      {day}
-                    </div>
-                  )
-                })}
-              </div>
-
-              {/* Legend */}
-              <div className="mt-8 pt-6 border-t border-border">
-                <p className="text-sm text-muted-foreground mb-4">
-                  {profile?.tracking_type === 'pregnancy'
-                    ? 'Track important dates in your pregnancy journey'
-                    : `Cycle length: ${profile?.cycle_length || 28} days | Period length: ${profile?.period_length || 5} days`}
-                </p>
-              </div>
-            </Card>
-          </div>
-        </div>
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
-          <Card className="p-4 border-0 bg-gradient-to-br from-red-50 to-pink-50">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-red-600 mb-1">
-                {Array.from(cycleLogs.values()).filter((l) => l.phase === 'period').length}
-              </div>
-              <p className="text-sm text-muted-foreground">Period Days Tracked</p>
-            </div>
+              </ul>
+            )}
+            <p className="mt-3 text-xs text-muted-foreground">Period prediction and ovulation tracking are disabled in Pregnancy Mode.</p>
           </Card>
-          <Card className="p-4 border-0 bg-gradient-to-br from-purple-50 to-pink-50">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600 mb-1">
-                {Array.from(cycleLogs.values()).filter((l) => l.phase === 'ovulation').length}
-              </div>
-              <p className="text-sm text-muted-foreground">Ovulation Days</p>
-            </div>
-          </Card>
-          <Card className="p-4 border-0 bg-gradient-to-br from-blue-50 to-purple-50">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600 mb-1">{cycleLogs.size}</div>
-              <p className="text-sm text-muted-foreground">Total Days Logged</p>
-            </div>
-          </Card>
-        </div>
-      </div>
+        )}
+      </main>
 
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t border-border">
-        <div className="max-w-6xl mx-auto px-4 py-3">
-          <div className="flex justify-around items-center">
-            <Link href="/dashboard" className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary">
-              <Home className="w-6 h-6" />
-              <span className="text-xs font-semibold">Home</span>
-            </Link>
-            <Link href="/calendar" className="flex flex-col items-center gap-1 text-primary">
-              <Calendar className="w-6 h-6" />
-              <span className="text-xs font-semibold">Calendar</span>
-            </Link>
-            <Link href="/profile" className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary">
-              <User className="w-6 h-6" />
-              <span className="text-xs font-semibold">Profile</span>
-            </Link>
-          </div>
-        </div>
-      </div>
+      <AppBottomNav />
     </div>
   )
 }

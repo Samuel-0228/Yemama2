@@ -110,3 +110,87 @@ CREATE POLICY "Educational content is public" ON educational_content FOR SELECT 
 CREATE INDEX idx_cycle_logs_user_date ON cycle_logs(user_id, date DESC);
 CREATE INDEX idx_health_metrics_user_date ON health_metrics(user_id, date DESC);
 CREATE INDEX idx_symptoms_user_date ON symptoms(user_id, date DESC);
+
+-- =========================================
+-- Additional required tables for dual-mode app
+-- =========================================
+
+CREATE TABLE IF NOT EXISTS users (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  preferred_mode TEXT NOT NULL DEFAULT 'cycle' CHECK (preferred_mode IN ('cycle', 'pregnancy')),
+  pin_enabled BOOLEAN DEFAULT false,
+  biometric_enabled BOOLEAN DEFAULT false,
+  created_at TIMESTAMP DEFAULT now(),
+  updated_at TIMESTAMP DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS cycles (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  date DATE NOT NULL,
+  flow TEXT,
+  mood TEXT,
+  notes TEXT,
+  is_period BOOLEAN DEFAULT false,
+  is_fertile BOOLEAN DEFAULT false,
+  is_ovulation BOOLEAN DEFAULT false,
+  created_at TIMESTAMP DEFAULT now(),
+  updated_at TIMESTAMP DEFAULT now(),
+  UNIQUE (user_id, date)
+);
+
+CREATE TABLE IF NOT EXISTS pregnancy_logs (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  date DATE NOT NULL,
+  current_week INTEGER,
+  baby_size TEXT,
+  tip TEXT,
+  appointment_date DATE,
+  symptoms TEXT[],
+  created_at TIMESTAMP DEFAULT now(),
+  updated_at TIMESTAMP DEFAULT now()
+);
+
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE cycles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE pregnancy_logs ENABLE ROW LEVEL SECURITY;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'users' AND policyname = 'Users can manage own preferences'
+  ) THEN
+    CREATE POLICY "Users can manage own preferences"
+    ON users
+    FOR ALL
+    USING (auth.uid() = id)
+    WITH CHECK (auth.uid() = id);
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'cycles' AND policyname = 'Users can manage their cycles'
+  ) THEN
+    CREATE POLICY "Users can manage their cycles"
+    ON cycles
+    FOR ALL
+    USING (auth.uid() = user_id)
+    WITH CHECK (auth.uid() = user_id);
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'pregnancy_logs' AND policyname = 'Users can manage pregnancy logs'
+  ) THEN
+    CREATE POLICY "Users can manage pregnancy logs"
+    ON pregnancy_logs
+    FOR ALL
+    USING (auth.uid() = user_id)
+    WITH CHECK (auth.uid() = user_id);
+  END IF;
+END $$;
