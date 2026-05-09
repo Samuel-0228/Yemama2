@@ -48,7 +48,7 @@ export default function LoginPage() {
       <div className="grid min-h-screen lg:grid-cols-2">
         <aside className="relative hidden overflow-hidden lg:block">
           <img
-            src="https://images.unsplash.com/photo-1609220136736-443140cffec6?auto=format&fit=crop&w=1400&q=80"
+            src="https://th.bing.com/th/id/R.88ccab5716292a9627fdff4c2f7dd6ba?rik=lCl0wNwxNbyVVw&pid=ImgRaw&r=0"
             alt="Mother smiling in a calm setting"
             className="h-full w-full object-cover"
           />
