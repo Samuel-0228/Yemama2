@@ -15,6 +15,14 @@ type ProfileRow = {
   tracking_type: 'period' | 'pregnancy' | null
 }
 
+function isProfileRow(value: unknown): value is ProfileRow {
+  if (!value || typeof value !== 'object') return false
+  const candidate = value as { full_name?: unknown; tracking_type?: unknown }
+  const tracking = candidate.tracking_type
+  return (typeof candidate.full_name === 'string' || candidate.full_name === null || candidate.full_name === undefined)
+    && (tracking === 'period' || tracking === 'pregnancy' || tracking === null || tracking === undefined)
+}
+
 export default function ProfilePage() {
   const supabase = createClient()
   const { mode } = useMode()
@@ -35,7 +43,7 @@ export default function ProfilePage() {
           .eq('user_id', user.id)
           .maybeSingle()
 
-        setProfile((data ?? null) as ProfileRow | null)
+        setProfile(isProfileRow(data) ? data : null)
       }
     }
 

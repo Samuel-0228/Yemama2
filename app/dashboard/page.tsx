@@ -144,6 +144,7 @@ export default function DashboardPage() {
   }, [latestPeriod])
 
   const latestPregnancy = pregnancyLogs[0]
+  const nextAppointment = pregnancyLogs.find((item) => item.appointment_date)
   const currentWeek = latestPregnancy?.current_week ?? 20
   const trimesterProgress = Math.min(Math.round((currentWeek / 40) * 100), 100)
   const fruitSize = latestPregnancy?.baby_size ?? fruitByWeek[20]
@@ -156,14 +157,14 @@ export default function DashboardPage() {
     try {
       const today = format(new Date(), 'yyyy-MM-dd')
 
-      const symptomDetails = `flow=${flow}; mood=${mood}`
+      const cycleDetails = `flow=${flow}; mood=${mood}`
 
       await supabase.from('symptoms').insert({
         user_id: userId,
         date: today,
         symptom_name: symptomName.trim(),
         intensity: 3,
-        notes: [symptomDetails, symptomNotes.trim()].filter(Boolean).join(' | ') || null,
+        notes: [cycleDetails, symptomNotes.trim()].filter(Boolean).join(' | ') || null,
       })
 
       if (mode === 'cycle') {
@@ -259,7 +260,7 @@ export default function DashboardPage() {
               </Card>
               <Card className="border-0 bg-gradient-to-br from-purple-50 to-blue-50 p-5">
                 <p className="text-xs text-muted-foreground">Baby Size</p>
-                <p className="mt-1 text-2xl font-bold">{fruitSize ?? 'Banana'} 🍌</p>
+                <p className="mt-1 text-2xl font-bold">{fruitSize ?? 'Banana'}</p>
               </Card>
               <Card className="border-0 bg-gradient-to-br from-blue-50 to-pink-50 p-5">
                 <p className="text-xs text-muted-foreground">Trimester Progress</p>
@@ -310,8 +311,8 @@ export default function DashboardPage() {
             </Card>
             <Card className="border-0 p-5">
               <div className="mb-3 flex items-center gap-2"><CalendarDays className="h-4 w-4 text-primary" /><h3 className="font-semibold">Appointment Reminders</h3></div>
-              {pregnancyLogs.find((item) => item.appointment_date) ? (
-                <p className="text-sm text-muted-foreground">Next appointment: {format(new Date(pregnancyLogs.find((item) => item.appointment_date)?.appointment_date as string), 'MMM d')}</p>
+              {nextAppointment?.appointment_date ? (
+                <p className="text-sm text-muted-foreground">Next appointment: {format(new Date(nextAppointment.appointment_date), 'MMM d')}</p>
               ) : (
                 <p className="text-sm text-muted-foreground">No appointments scheduled yet.</p>
               )}

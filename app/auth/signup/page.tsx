@@ -55,9 +55,10 @@ export default function SignupPage() {
       if (anonError) throw anonError
 
       const localMode = window.localStorage.getItem(MODE_STORAGE_KEY)
+      const preferredTrackingType = localMode === 'pregnancy' ? 'pregnancy' : 'period'
       await supabase.from('user_profiles').upsert({
         user_id: data.user?.id,
-        tracking_type: localMode === 'pregnancy' ? 'pregnancy' : 'period',
+        tracking_type: preferredTrackingType,
       }, { onConflict: 'user_id' })
 
       router.push('/dashboard')

@@ -14,6 +14,11 @@ type ChatMessage = {
   text: string
 }
 
+type SymptomSummaryRow = {
+  symptom_name: string
+  date: string
+}
+
 export default function AssistantPage() {
   const supabase = createClient()
   const { mode, userId } = useMode()
@@ -43,7 +48,7 @@ export default function AssistantPage() {
         return
       }
 
-      const summary = data.map((item: { symptom_name: string; date: string }) => `${item.symptom_name} on ${item.date}`).join('; ')
+      const summary = (data as SymptomSummaryRow[]).map((item) => `${item.symptom_name} on ${item.date}`).join('; ')
       setContextSummary(summary)
     }
 

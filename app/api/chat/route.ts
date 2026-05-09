@@ -29,9 +29,9 @@ export async function POST(request: NextRequest) {
       'Rules: provide concise, non-diagnostic guidance, include a short safety disclaimer in every answer.',
     ].join('\n')
 
-    const geminiResponse = await fetch(`${GEMINI_ENDPOINT}?key=${apiKey}`, {
+    const geminiResponse = await fetch(GEMINI_ENDPOINT, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
       body: JSON.stringify({
         contents: [
           {

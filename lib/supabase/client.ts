@@ -14,7 +14,7 @@ function resolveSupabaseCredentials() {
 
   return {
     url: 'http://localhost:54321',
-    anonKey: 'public-anon-key',
+    anonKey: 'PLACEHOLDER_ANON_KEY',
   }
 }
 

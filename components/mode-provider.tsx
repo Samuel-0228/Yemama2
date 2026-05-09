@@ -20,6 +20,10 @@ type ProfileTrackingRow = {
   tracking_type: string | null
 }
 
+function isMode(value: string | null): value is Mode {
+  return value === 'cycle' || value === 'pregnancy'
+}
+
 function fromTrackingType(value: string | null | undefined): Mode {
   return value === 'pregnancy' ? 'pregnancy' : 'cycle'
 }
@@ -39,8 +43,8 @@ export function ModeProvider({ children }: { children: React.ReactNode }) {
 
     const hydrate = async () => {
       try {
-        const localMode = window.localStorage.getItem(MODE_STORAGE_KEY) as Mode | null
-        if (localMode === 'cycle' || localMode === 'pregnancy') {
+        const localMode = window.localStorage.getItem(MODE_STORAGE_KEY)
+        if (isMode(localMode)) {
           setModeState(localMode)
         }
 
